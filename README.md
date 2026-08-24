@@ -1,11 +1,7 @@
 # Mesh Based Inverse Kinematics
-Implementation of the method described in the paper "Mesh-Based Inverse Kinematics" by Sumner et al. 2005.
-This method learns the features of a mesh through example poses and uses these features to generate new
-meaningful poses that satisfy user inputted position constraints.
+This repo is a re-implementation of the method described in Mesh-Based Inverse Kinematics by Sumner et al. (2005). At a high level, the method learns from a set of example mesh poses and uses them to generate natural interpolations and new poses. It represents each pose with a feature vector describing the local deformation of each triangle, then interpolates these deformations by separating them into rotation and scale/shear components. It interpolates scale and shear linearly, while rotations are interpolated using an axis-angle representation.
 
-Techniques used: mesh processing, linear algebra, optimization
-
-![Straight and curved tube examples, with new poses generated in between](images/tube_ik_sweep.png)
+I originally implemented the main part of this project for MIT 6.8410: Shape Analysis in Spring 2023. Since then, I've done some cleanup and small improvements to make the repo a bit easier to follow and use.
 
 ## Method
 
@@ -31,21 +27,13 @@ rotation and a shear (polar decomposition). Rotations are blended in log space a
 
 ## Examples
 
-Two examples of a tube, straight and curved, are enough to generate any bend in between. The front face is held
-in place and the end vertex is dragged.
-
-![Generated tube poses overlaid on the examples](images/tube_ik_overlay.png)
-
 Interpolating in feature space between two cat poses, with no other constraints, gives intermediate poses of
 the run cycle.
 
 ![Interpolation between two cat poses](images/cat_interpolation.png)
 
-More tube examples are in `meshes/`: a 45 degree bend, an out-of-plane bend and a twisted coil.
-
-![The five tube examples](images/tube_examples.png)
-
-Run `meshik.py` to see the tube example. `examples/make_readme_figures.py` regenerates the figures above.
+Run `meshik.py` to see a tube example with position constraints. `examples/make_readme_figures.py` regenerates
+the figures.
 
 ## Setup
 
@@ -81,10 +69,6 @@ and face count, then one vertex or face per line). OBJ files are also read. The 
 rigged Blender animation.
 
 ## Work in progress
-
-Done
-- Refactor/organize/comment code
-- Include different ways of solving (interpolation without constraints)
 
 Todo
 - Implement rodrigues exponential map
