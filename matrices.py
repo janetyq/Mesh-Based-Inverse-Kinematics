@@ -1,8 +1,7 @@
 
 import numpy as np
 from scipy.linalg import polar, expm
-from math import cos, sin, pi, acos, asin, sqrt
-import scipy.sparse as sp
+from math import sin, pi, acos
 
 # MATRICES AND VECTORS
 
@@ -97,7 +96,7 @@ def get_M_components(feature_vectors):
     return np.array(M_rotations), np.array(M_shears)
 
 def calculate_rotation_log(R):
-    R /= np.linalg.det(R)
+    R = R / np.linalg.det(R)
     if np.allclose(R, np.eye(3)):
         return np.zeros((3, 3))
     tr = max(min(np.trace(R), 3), -1)
@@ -109,9 +108,20 @@ def calculate_rotation_log(R):
     K = 1 / (2 * sin(theta)) * (R - R.T)
     return theta * K
 
-def compute_Mw_Dw(w, M_rotations, M_shears):    
-    N, m = len(M_rotations), len(M_rotations[0])
-    log_rotations = np.array([[calculate_rotation_log(R) for R in M_rotation] for M_rotation in M_rotations])
+def get_log_rotations(M_rotations):
+    '''
+    Log of every rotation, shape (N, m, 3, 3). Depends only on the examples, so computed once.
+    '''
+    return np.array([[calculate_rotation_log(R) for R in M_rotation] for M_rotation in M_rotations])
+
+def compute_Mw_Dw(w, log_rotations, M_shears):
+    '''
+    Nonlinear blend of the example features with weights w (N, 1) (paper eq. 6) and its
+    Jacobian with respect to w (paper eq. 7).
+
+    Returns Mw of shape (9m, 1) and Dw of shape (9m, N).
+    '''
+    N, m = len(log_rotations), len(log_rotations[0])
     weighted_log_rotations = np.sum(log_rotations  * w[:, np.newaxis, np.newaxis], axis=0)
     
     rotation_combo = np.array([np.real(expm(log_rot)) for log_rot in weighted_log_rotations])

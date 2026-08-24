@@ -1,19 +1,23 @@
+import os
+
 import numpy as np
-from utils.io import *
+
+from utils.io import read_obj, read_off
 
 # MESH PREPROCESSING
-def import_meshes(mesh_files):
+def import_meshes(mesh_files, mesh_dir="meshes"):
     vertices_list = []
     faces = None
     for file in mesh_files:
-        vertices, faces_ = read_obj(file) if file[-3:] == 'obj' else read_off(file)
+        path = os.path.join(mesh_dir, file)
+        vertices, faces_ = read_obj(path) if os.path.splitext(file)[1] == '.obj' else read_off(path)
         if faces is None:
             faces = faces_
         else:
             # check that all meshes have the same faces
             assert(np.array_equal(faces, faces_))
-        vertices_list.append(vertices)       
-        
+        vertices_list.append(vertices)
+
     return np.array(vertices_list), faces
 
 def calc_fourth_vertex(vertices, face):
@@ -40,5 +44,5 @@ def add_fourth_vertices(vertices_list, faces):
             fourth_vertices.append(calc_fourth_vertex(vertices, face))
         new_vertices_list.append(np.concatenate((vertices, fourth_vertices)))
     new_vertices_list = np.array(new_vertices_list)
-    new_faces = np.concatenate((faces, np.reshape(np.arange(nv, n), (nf, 1))), axis=1)  
+    new_faces = np.concatenate((faces, np.reshape(np.arange(nv, n), (nf, 1))), axis=1)
     return new_vertices_list, new_faces
