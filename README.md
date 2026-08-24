@@ -5,7 +5,19 @@ meaningful poses that satisfy user inputed position constraints.
 
 Techniques used: mesh processing, linear algebra, optimization
 
-Run 'meshik.py' to see an example.
+## Setup
+
+Dependencies are managed with [uv](https://docs.astral.sh/uv/). `uv sync` creates a project-local `.venv`
+with numpy/scipy/matplotlib and the dev tools (pytest).
+
+```
+uv sync
+uv run python meshik.py   # run the tube example
+uv run pytest             # run the tests
+```
+
+`tests/golden/tube.npz` pins the tube example's output; regenerate it with `uv run python tests/make_golden.py`
+only when a change in behaviour is intended.
 
 ## Work in progress
 
