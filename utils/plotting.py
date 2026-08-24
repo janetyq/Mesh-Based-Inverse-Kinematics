@@ -2,11 +2,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
-from matplotlib.gridspec import GridSpec
-
-
-# TODO
-# make plot_mesh plot meshes together
 
 def plot_3d_vertices(vertices):
     fig = plt.figure()
@@ -83,27 +78,14 @@ def plot_x_mesh(x, faces, ax=None, options=None, title=None, scatter_points=None
     if scatter_indices is not None:
         ax.scatter(vertices[scatter_indices, 0], vertices[scatter_indices, 1], vertices[scatter_indices, 2], c='r', marker='o')
     
-def simple_plot_mesh(mesh):
-    vertices, faces = mesh()
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.set_box_aspect([1, 1, 1])
-    ax.plot_trisurf(vertices[:, 0], vertices[:, 1], vertices[:, 2], triangles=faces[:, :3], edgecolor='k', linewidth=1, alpha=0.2, facecolor='none')
-
-    x_range = np.ptp(vertices[:, 0])
-    y_range = np.ptp(vertices[:, 1])
-    z_range = np.ptp(vertices[:, 2])
-
-    ax.set_box_aspect([x_range, y_range, z_range])
-
-def plot_meshes(meshes, faces):
+def plot_meshes(meshes, faces, options=None):
+    '''
+    Plots several meshes (sharing faces) on the same axes
+    '''
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
-    # ax.set_xlim(-2, 10)
-    # ax.set_ylim(-2, 10)
-    # ax.set_zlim(-5, 5)
     for mesh in meshes:
-        plot_mesh(mesh, faces, ax, wireframe=False)
+        plot_mesh(mesh, faces, ax=ax, options=options)
     return fig, ax
 
 def plot_mesh_face_values(vertices, faces, weights, clean=False, title=None):
@@ -135,35 +117,3 @@ def plot_mesh_face_values(vertices, faces, weights, clean=False, title=None):
 
     # Set colorbar
     cbar = fig.colorbar(collection)
-
-def plot_x_mesh2_multiple(meshes, faces, titles=None, cmaps=None, options=None):
-    fig = plt.figure()
-    title = ""
-    cmap = None
-    num_plots = len(meshes)
-    gs = GridSpec(1, num_plots, wspace=0.0, hspace=0.0, 
-                  top=0.92, bottom=0.08, left=0.0, right=1.0) 
-    for i in range(num_plots):
-        ax = fig.add_subplot(gs[i], projection='3d')
-        if titles:
-            title = titles[i]
-        if cmaps:
-            cmap = cmaps[i]
-        options.update({'cmap': cmap})
-        plot_x_mesh2(meshes[i], faces, ax=ax, options=options, title=title)
-
-def plot_mesh2_multiple(meshes, faces, titles=None, cmaps=None, options=None):
-    fig = plt.figure()
-    title = ""
-    cmap = None
-    num_plots = len(meshes)
-    gs = GridSpec(1, num_plots, wspace=0.0, hspace=0.0, 
-                  top=0.92, bottom=0.08, left=0.0, right=1.0) 
-    for i in range(num_plots):
-        ax = fig.add_subplot(gs[i], projection='3d')
-        if titles:
-            title = titles[i]
-        if cmaps:
-            cmap = cmaps[i]
-        options.update({'cmap': cmap})
-        plot_mesh2(meshes[i], faces, ax=ax, options=options, title=title)
