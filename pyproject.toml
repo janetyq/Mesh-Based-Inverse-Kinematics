@@ -1,0 +1,19 @@
+[project]
+name = "mesh-based-inverse-kinematics"
+version = "0.1.0"
+description = "Implementation of Mesh-Based Inverse Kinematics (Sumner et al. 2005)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Modules live at the repo root; tests import them via rootdir.
+pythonpath = ["."]
