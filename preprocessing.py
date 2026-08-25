@@ -20,10 +20,13 @@ def import_meshes(mesh_files, mesh_dir="meshes"):
 
     return np.array(vertices_list), faces
 
-def calc_fourth_vertex(vertices, face):
-    v1, v2, v3 = vertices[face[0]], vertices[face[1]], vertices[face[2]]
+def calc_fourth_vertex(vertices, faces):
+    '''
+    Fourth vertex of each face (m, 3): the first vertex moved one unit along the face normal
+    '''
+    v1, v2, v3 = vertices[faces[:, 0]], vertices[faces[:, 1]], vertices[faces[:, 2]]
     cross_prod = np.cross(v2 - v1, v3 - v1)
-    return v1 + cross_prod / np.linalg.norm(cross_prod)
+    return v1 + cross_prod / np.linalg.norm(cross_prod, axis=1, keepdims=True)
 
 def add_fourth_vertices(vertices_list, faces):
     '''
@@ -37,12 +40,7 @@ def add_fourth_vertices(vertices_list, faces):
     nf = len(faces)     # number of faces
     n = nv + nf         # number of vertices after adding 4th vertex to each face
 
-    new_vertices_list = []
-    for vertices in vertices_list:
-        fourth_vertices = []
-        for face in faces:
-            fourth_vertices.append(calc_fourth_vertex(vertices, face))
-        new_vertices_list.append(np.concatenate((vertices, fourth_vertices)))
-    new_vertices_list = np.array(new_vertices_list)
+    new_vertices_list = np.array([np.concatenate((vertices, calc_fourth_vertex(vertices, faces)))
+                                  for vertices in vertices_list])
     new_faces = np.concatenate((faces, np.reshape(np.arange(nv, n), (nf, 1))), axis=1)
     return new_vertices_list, new_faces

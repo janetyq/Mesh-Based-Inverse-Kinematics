@@ -82,7 +82,5 @@ rigged Blender animation.
 ## Work in progress
 
 Todo
-- Implement rodrigues exponential map
-- Vectorize nonlinear combination of feature vectors
-- Sparse `G` and the block Cholesky solver from the paper
+- Block Cholesky solver from the paper (section 4.2)
 - Add a nice explanation of the method
