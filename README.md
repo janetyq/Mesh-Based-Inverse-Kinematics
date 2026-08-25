@@ -1,7 +1,7 @@
 # Mesh Based Inverse Kinematics
 This repo is a re-implementation of the method described in Mesh-Based Inverse Kinematics by Sumner et al. (2005). At a high level, the method learns from a set of example mesh poses and uses them to generate natural interpolations and new poses. It represents each pose with a feature vector describing the local deformation of each triangle, then interpolates these deformations by separating them into rotation and scale/shear components. It interpolates scale and shear linearly, while rotations are interpolated using an axis-angle representation.
 
-I originally implemented the main part of this project for MIT 6.8410: Shape Analysis in Spring 2023. Since then, I've done some cleanup and small improvements to make the repo a bit easier to follow and use.
+I originally implemented this as a class project for MIT 6.8410: Shape Analysis in Spring 2023. Since then, I've done some cleanup and small improvements to make the repo a bit easier to follow and use.
 
 ## Method
 
