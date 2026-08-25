@@ -47,5 +47,5 @@ def build_model(vertices_list, faces):
     feature_vectors = np.array([G @ x for x in xs]).reshape(N, -1).T
 
     M_rotations, M_shears = get_M_components(feature_vectors)
-    log_rotations = get_log_rotations(M_rotations)
+    log_rotations = get_log_rotations(M_rotations, faces)
     return MeshIKModel(faces, xs, G, feature_vectors, log_rotations, M_shears)

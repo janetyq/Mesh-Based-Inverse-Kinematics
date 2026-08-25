@@ -1,7 +1,8 @@
 
 import numpy as np
 from scipy.linalg import polar, expm
-from math import sin, pi, acos
+from scipy.spatial.transform import Rotation
+from math import pi
 
 # MATRICES AND VECTORS
 
@@ -96,23 +97,65 @@ def get_M_components(feature_vectors):
     return np.array(M_rotations), np.array(M_shears)
 
 def calculate_rotation_log(R):
-    R = R / np.linalg.det(R)
-    if np.allclose(R, np.eye(3)):
-        return np.zeros((3, 3))
-    tr = max(min(np.trace(R), 3), -1)
-    theta = acos((tr - 1) / 2)
-    if np.isclose(theta, 0):
-        return np.zeros((3, 3))
-    elif np.isclose(theta, pi):
-        return np.zeros((3, 3))
-    K = 1 / (2 * sin(theta)) * (R - R.T)
-    return theta * K
+    '''
+    Matrix logarithm of rotations R (..., 3, 3): the skew-symmetric matrices (..., 3, 3) whose
+    axis-angle vectors have angle in [0, pi]. Exact at pi and well conditioned near it.
+    '''
+    R = np.asarray(R)
+    rotvecs = Rotation.from_matrix(R.reshape(-1, 3, 3)).as_rotvec().reshape(R.shape[:-2] + (3,))
+    return skew(rotvecs)
 
-def get_log_rotations(M_rotations):
+def skew(v):
+    '''
+    Skew-symmetric matrices (..., 3, 3) of vectors v (..., 3), so that skew(v) @ u = v x u
+    '''
+    v = np.asarray(v)
+    K = np.zeros(v.shape[:-1] + (3, 3))
+    K[..., 0, 1], K[..., 0, 2], K[..., 1, 2] = -v[..., 2], v[..., 1], -v[..., 0]
+    K[..., 1, 0], K[..., 2, 0], K[..., 2, 1] = v[..., 2], -v[..., 1], v[..., 0]
+    return K
+
+def unskew(K):
+    return np.stack([K[..., 2, 1], K[..., 0, 2], K[..., 1, 0]], axis=-1)
+
+def face_neighbours(faces):
+    '''
+    For each face, the indices of the other faces sharing at least one of its original three vertices
+    '''
+    vertex_faces = {}
+    for i, face in enumerate(faces):
+        for v in face[:3]:
+            vertex_faces.setdefault(v, []).append(i)
+    return [sorted({j for v in face[:3] for j in vertex_faces[v]} - {i}) for i, face in enumerate(faces)]
+
+def get_log_rotations(M_rotations, faces=None):
     '''
     Log of every rotation, shape (N, m, 3, 3). Depends only on the examples, so computed once.
+
+    A rotation by exactly pi has two equally valid logs (axis n or -n). Blending a face whose log
+    uses the opposite sign from its neighbours tears the mesh, so for those faces the sign is chosen
+    to agree with the neighbouring faces (paper footnote 1). faces (m, 4) enables this; without it
+    the sign is chosen to agree with the mesh as a whole.
     '''
-    return np.array([[calculate_rotation_log(R) for R in M_rotation] for M_rotation in M_rotations])
+    log_rotations = calculate_rotation_log(np.asarray(M_rotations))
+    rotvecs = unskew(log_rotations)
+    angles = np.linalg.norm(rotvecs, axis=-1)
+    neighbours = face_neighbours(faces) if faces is not None else None
+    for i in range(len(rotvecs)):
+        at_pi = np.isclose(angles[i], pi, atol=1e-6)
+        if not at_pi.any():
+            continue
+        others = rotvecs[i][~at_pi & (angles[i] > 0.5)]
+        reference = others.mean(axis=0) if len(others) else np.zeros(3)
+        for j in np.where(at_pi)[0]:
+            ref = reference
+            if neighbours is not None:
+                near = [k for k in neighbours[j] if not at_pi[k] and angles[i][k] > 0.5]
+                if near:
+                    ref = rotvecs[i][near].mean(axis=0)
+            if rotvecs[i][j] @ ref < 0:
+                rotvecs[i][j] *= -1
+    return skew(rotvecs)
 
 def compute_Mw_Dw(w, log_rotations, M_shears):
     '''

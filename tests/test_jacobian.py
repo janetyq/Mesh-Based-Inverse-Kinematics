@@ -33,11 +33,6 @@ def test_compute_Mw_Dw_does_not_mutate_inputs(tube_model):
     np.testing.assert_array_equal(tube_model.shears, S)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="calculate_rotation_log (matrices.py) returns a zero log for 180-degree rotations, so the curved "
-    "tube's 8 end-cap faces are treated as unrotated. Fixed by the Rodrigues log/exp in Phase 2.",
-)
 def test_Mw_at_one_hot_weights_reproduces_example(tube_model):
     """M(e_i) must return example i's feature vector exactly (exp(log R) S = R S = T)."""
     L, S, N, F = tube_model.log_rotations, tube_model.shears, tube_model.N, tube_model.feature_vectors
