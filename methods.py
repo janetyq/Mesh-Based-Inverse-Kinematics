@@ -14,7 +14,8 @@ def solve_for_target_feature(model, constraints, f_target):
     Finds best vertex positions to match a given feature vector (9m, 1)
     '''
     G_tilda, C = constraint_preprocessing(constraints, model.n, model.G)
-    x = np.linalg.pinv(G_tilda) @ (f_target - C)
+    # normal equations; G_tilda^T G_tilda is sparse and positive definite once translation is constrained
+    x = sp.linalg.spsolve(G_tilda.T @ G_tilda, G_tilda.T @ (f_target - C)).reshape(-1, 1)
     return constraint_postprocessing(x, constraints, model.n)
 
 
@@ -29,7 +30,7 @@ def solve_for_constraints(model, constraints, k=0):
     M = model.feature_vectors
     mean_f = np.mean(M, axis=1, keepdims=True)
 
-    A = np.hstack([G_tilda, -M])
+    A = np.hstack([G_tilda.toarray(), -M])  # dense: the linear solver is a small-mesh reference
     b = -C + mean_f
     if k != 0:
         Gamma = np.hstack([np.zeros((model.N, 3*n_tilda)), k * np.eye(model.N)])
@@ -49,7 +50,6 @@ def nonlinear_optimization(model, constraints, max_iterations=10, tolerance=1e-4
     by Gauss-Newton iteration, solving each linearized least squares problem with lsqr.
     '''
     G_tilda, C = constraint_preprocessing(constraints, model.n, model.G)
-    G_tilda = sp.csr_matrix(G_tilda)
     n_tilda = G_tilda.shape[1] // 3
     w_result = np.ones((model.N, 1)) / model.N
 

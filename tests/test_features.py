@@ -1,5 +1,6 @@
 """G is the feature extractor: G @ x must equal the per-face deformation gradients computed directly."""
 import numpy as np
+import scipy.sparse as sp
 
 from matrices import (
     check_feature_vectors,
@@ -23,7 +24,8 @@ def test_model_sizes(tube_model):
 
 
 def test_G_sparsity(tube_model):
-    nnz_per_row = (tube_model.G != 0).sum(axis=1)
+    assert isinstance(tube_model.G, sp.csc_matrix)
+    nnz_per_row = np.diff(tube_model.G.tocsr().indptr)
     # each row touches the 4 vertices of one face; fewer only when v_inv has exact zeros (axis-aligned tube)
     assert np.all((1 <= nnz_per_row) & (nnz_per_row <= 4))
     assert nnz_per_row.max() == 4
@@ -42,4 +44,4 @@ def test_feature_transformation_roundtrip(tube_model):
 
 def test_get_G_is_deterministic(tube_meshes, tube_model):
     vertices_list, faces = add_fourth_vertices(*tube_meshes)
-    np.testing.assert_array_equal(get_G(vertices_list[0], faces), tube_model.G)
+    np.testing.assert_array_equal(get_G(vertices_list[0], faces).toarray(), tube_model.G.toarray())

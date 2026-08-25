@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import scipy.sparse as sp
 
 from matrices import get_G, get_M_components, get_log_rotations, get_x
 from preprocessing import add_fourth_vertices
@@ -16,7 +17,7 @@ class MeshIKModel:
     '''
     faces: np.ndarray            # (m, 4) vertex indices, fourth column is the added vertex
     xs: np.ndarray               # (N, 3n, 1) example poses as unrolled vertex vectors, see get_x
-    G: np.ndarray                # (9m, 3n) feature extractor, f = G x
+    G: sp.csc_matrix             # (9m, 3n) sparse feature extractor, f = G x
     feature_vectors: np.ndarray  # (9m, N) one feature vector per example (column)
     log_rotations: np.ndarray    # (N, m, 3, 3) log of the rotation part of every face transformation
     shears: np.ndarray           # (N, m, 3, 3) shear/stretch part of every face transformation
@@ -44,7 +45,7 @@ def build_model(vertices_list, faces):
 
     G = get_G(vertices_list[0], faces)
     xs = np.array([get_x(vertices) for vertices in vertices_list])
-    feature_vectors = np.array([G @ x for x in xs]).reshape(N, -1).T
+    feature_vectors = np.hstack([G @ x for x in xs])  # (9m, N)
 
     M_rotations, M_shears = get_M_components(feature_vectors)
     log_rotations = get_log_rotations(M_rotations, faces)

@@ -34,10 +34,10 @@ def constraint_preprocessing(constraints, n, G):
     and C = G x_constrained is the contribution of the constrained (known) coordinates.
     '''
     indices, values = constrained_indices(constraints, n)
-    G_tilda = np.delete(G, indices, axis=1)
-    x_constrained = np.zeros((3*n, 1))
-    x_constrained[indices] = values
-    C = G @ x_constrained
+    free = np.ones(3*n, dtype=bool)
+    free[indices] = False
+    G_tilda = G[:, free]
+    C = G[:, indices] @ values
     return G_tilda, C
 
 def constraint_postprocessing(x_tilda, constraints, n):
