@@ -62,8 +62,8 @@ def plot_mesh(vertices, faces, ax=None, options=None, title=None):
     else:
         linewidth = 1
 
-    ax.plot_trisurf(vertices[:end, 0], vertices[:end, 1], vertices[:end, 2], triangles=faces[:, :3], 
-                    edgecolor='k', linewidth=linewidth, alpha=0.5, cmap=options.get('cmap'))
+    ax.plot_trisurf(vertices[:end, 0], vertices[:end, 1], vertices[:end, 2], triangles=faces[:, :3],
+                    edgecolor='k', linewidth=linewidth, alpha=options.get('alpha', 0.5), cmap=options.get('cmap'))
 
     return ax
 
@@ -117,3 +117,54 @@ def plot_mesh_face_values(vertices, faces, weights, clean=False, title=None):
 
     # Set colorbar
     cbar = fig.colorbar(collection)
+
+# FIGURE HELPERS
+
+FIGURE_OPTIONS = {'clean': True, 'view': True, 'boxaspect': True}
+
+def plot_mesh_row(meshes, faces, cmaps, options=None, titles=None, figsize=None, shared_scale=True):
+    '''
+    Plots meshes side by side in one row, top-down and without axes.
+    cmaps: one colormap name per mesh (e.g. 'Blues' for examples, 'Greens' for generated meshes)
+    shared_scale: draw every mesh at the same scale (so a sequence reads as one motion)
+    '''
+    options = {**FIGURE_OPTIONS, **(options or {})}
+    meshes = [np.asarray(m) for m in meshes]
+    all_vertices = np.concatenate([m[:-len(faces)] for m in meshes])
+    lo, hi = all_vertices.min(axis=0), all_vertices.max(axis=0)
+    span = (hi - lo).max()
+
+    fig = plt.figure(figsize=figsize or (3 * len(meshes), 3))
+    for i, mesh in enumerate(meshes):
+        ax = fig.add_subplot(1, len(meshes), i + 1, projection='3d')
+        plot_mesh(mesh, faces, ax=ax, options={**options, 'cmap': cmaps[i]},
+                  title=titles[i] if titles else None)
+        lo_i, hi_i = mesh[:-len(faces)].min(axis=0), mesh[:-len(faces)].max(axis=0)
+        center = (lo_i + hi_i) / 2
+        if not shared_scale:
+            span = (hi_i - lo_i).max()
+        ax.set_xlim(center[0] - span/2, center[0] + span/2)
+        ax.set_ylim(center[1] - span/2, center[1] + span/2)
+        ax.set_zlim(center[2] - span/2, center[2] + span/2)
+        ax.set_box_aspect([1, 1, 1])
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0)
+    return fig
+
+def plot_mesh_overlay(meshes, faces, cmaps, alphas=None, options=None, figsize=(6, 6)):
+    '''
+    Plots meshes on top of each other in one axes, top-down and without axes.
+    alphas: transparency per mesh, e.g. low for example meshes and high for generated meshes
+    '''
+    options = {**FIGURE_OPTIONS, **(options or {})}
+    if alphas is None:
+        alphas = [0.5] * len(meshes)
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111, projection='3d')
+    for mesh, cmap, alpha in zip(meshes, cmaps, alphas):
+        plot_mesh(mesh, faces, ax=ax, options={**options, 'cmap': cmap, 'alpha': alpha})
+    all_vertices = np.concatenate([np.asarray(m)[:-len(faces)] for m in meshes])
+    lo, hi = all_vertices.min(axis=0), all_vertices.max(axis=0)
+    ax.set_xlim(lo[0], hi[0]); ax.set_ylim(lo[1], hi[1]); ax.set_zlim(lo[2], hi[2])
+    ax.set_box_aspect(hi - lo)
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    return fig
