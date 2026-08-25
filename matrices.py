@@ -19,6 +19,8 @@ def get_G(ref_vertices, faces):
     Applying G onto a vector x of unrolled vertices returns the feature vector f of shape (9*m, 1)
 
     G = kron(I_3, g) where g (3m, n) has one 3x4 block per face: [V^-1, -V^-1 1] at columns face
+    T = V_def V_ref^-1 (undo the reference edges, apply the deformed ones). The edges are v_k - v_4,
+    so once T is written in terms of vertex positions the v_4 column is minus the sum of the other three.
     '''
     m = len(faces)
     n = len(ref_vertices)
@@ -181,6 +183,7 @@ def compute_Mw_Dw(w, log_rotations, M_shears):
 
     Mw = convert_transformations_to_feature(rotation_combo @ shear_combo)
     # d/dw_k of exp(sum_i w_i log R_i) S(w) = exp(...) log R_k S(w) + exp(...) S_k   (paper eq. 7)
+    # exact only when a face's log R_i share an axis (tube); otherwise the paper's approximation (cat)
     Dw = rotation_combo[None] @ log_rotations @ shear_combo[None] + rotation_combo[None] @ M_shears  # (N, m, 3, 3)
     Dw = np.stack([convert_transformations_to_feature(Dw_k).ravel() for Dw_k in Dw], axis=1)       # (9m, N)
     return Mw, Dw
