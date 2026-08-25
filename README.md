@@ -5,23 +5,34 @@ I originally implemented the main part of this project for MIT 6.8410: Shape Ana
 
 ## Method
 
-Each example mesh is described by a feature vector: the affine transformation (deformation gradient) of every
-face relative to the reference mesh. The feature vector is a linear function of the vertex positions, `f = G x`,
-where `G` depends only on the reference mesh. A fourth vertex is added to each face along its normal so that the
-transformation is fully determined (Sumner and Popovic 2004).
+The input to MeshIK is a small set of topologically identical meshes in different poses. One mesh is chosen as the **reference mesh**, and each other pose is represented by a feature vector describing how it deforms relative to that reference.
 
-The example feature vectors span a "feature space" of meaningful poses. Given position constraints on some
-vertices, MeshIK finds the vertex positions `x` and blend weights `w` such that `G x` is as close as possible
-to the blend of example features `M(w)`:
+The feature vector is formed by concatenating the **deformation gradient** of every triangle. Each deformation gradient is a 3 × 3 matrix representing the local affine transformation that maps a triangle from the reference mesh to its position in the deformed mesh. A triangle's three vertices alone do not uniquely determine a 3D affine transformation, so a fourth vertex is added in the direction normal to each triangle, following Sumner and Popović (2004).
 
-```
-min ||G x - M(w)||    subject to the constrained vertices
-x, w
+An important property of this representation is that the deformation gradients are linear in the vertex positions. If `x` contains the mesh vertex positions and `f` is its feature vector, then
+
+```text
+f = G x
 ```
 
-Blending features linearly works poorly for large rotations, so each face transformation is split into a
-rotation and a shear (polar decomposition). Rotations are blended in log space and shears linearly. This makes
-`M(w)` nonlinear in `w`, and the problem is solved with Gauss-Newton iterations.
+where `G` depends only on the reference mesh.
+
+The example poses define a **feature space** of meaningful deformations. By blending the examples in this space, we can generate a new feature vector and reconstruct a corresponding mesh pose. MeshIK adds positional constraints to turn this into an inverse-kinematics problem: given desired positions for a subset of vertices, it solves simultaneously for the mesh vertex positions `x` and the example blend weights `w`, looking for a mesh whose deformation `Gx` is as close as possible to a blended example deformation `M(w)` while exactly satisfying the vertex constraints:
+
+```text
+             min  || Gx - M(w) ||
+             x,w
+
+subject to the constrained vertex positions
+```
+
+The interesting part is how `M(w)` blends the examples. Simply blending the deformation gradients linearly produces poor results when the poses contain large rotations. For example, rotating geometry can shrink or collapse midway through an interpolation. Instead, each triangle's deformation gradient is split into a rotation and a scale/shear component using polar decomposition:
+
+```text
+T = R S
+```
+
+The scale/shear components are blended linearly. The rotations are first mapped using the matrix logarithm from `SO(3)` into `so(3)`, where they can be represented and blended in axis-angle form, then mapped back to a rotation using the matrix exponential. In other words, MeshIK interpolates the rotational and non-rotational parts of each local deformation separately, which avoids many of the artifacts caused by directly interpolating vertex positions or transformation matrices.
 
 ![Linear feature blend vs nonlinear feature blend](images/tube_linear_vs_nonlinear.png)
 
